@@ -8,8 +8,6 @@ import 'pengingat_tugas_page.dart';
 import 'laporan_tugas_page.dart';
 import 'profil_page.dart';
 
-import '../models/data_models.dart';
-import '../models/data_manager.dart';
 import '../models/tugas_state_notifier.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -24,7 +22,6 @@ class _DashboardPageState extends State<DashboardPage>
   late TugasStateNotifier _tugasNotifier;
 
   int _petLevel = 1;
-  int _selectedNavIndex = 0;
   late AnimationController _rotationController;
 
   @override

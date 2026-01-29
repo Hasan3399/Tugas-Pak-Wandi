@@ -102,7 +102,7 @@ class _PengingatTugasPageState extends State<PengingatTugasPage> {
   }
 
   void _editTugas(int index) {
-    final tugas = _tugas[index];
+    final tugas = _tugasNotifier.tugas[index];
     _judulController.text = tugas.judul;
     _deskripsiController.text = tugas.deskripsi ?? '';
     _selectedMKId = tugas.idMatakuliah;
@@ -185,21 +185,18 @@ class _PengingatTugasPageState extends State<PengingatTugasPage> {
                   selesai: tugas.selesai,
                 );
                 
-                DataManager.updateTugas(updatedTugas).then((_) {
+                _tugasNotifier.updateTugas(updatedTugas).then((_) {
                   if (_selectedMKId != null) {
                     final mk = _mataKuliah.firstWhere((m) => m.id == _selectedMKId);
                     updatedTugas.mataKuliah = mk.nama;
                   }
-                  setState(() {
-                    _tugas[index] = updatedTugas;
-                  });
                   Navigator.of(context).pop();
                   _judulController.clear();
                   _deskripsiController.clear();
                   _selectedMKId = null;
                   _selectedDeadline = null;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tugas berhasil diperbarui')),
+                    const SnackBar(content: Text('✓ Tugas berhasil diperbarui')),
                   );
                 }).catchError((e) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -401,10 +398,4 @@ class _PengingatTugasPageState extends State<PengingatTugasPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _judulController.dispose();
-    _deskripsiController.dispose();
-    super.dispose();
-  }
 }

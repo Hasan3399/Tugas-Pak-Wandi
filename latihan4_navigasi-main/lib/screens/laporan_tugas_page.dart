@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/data_models.dart';
-import '../models/data_manager.dart';
 import '../models/tugas_state_notifier.dart';
 
 class LaporanTugasPage extends StatefulWidget {
@@ -58,6 +56,7 @@ class _LaporanTugasPageState extends State<LaporanTugasPage> {
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
       });
+    }
   }
 
   int get _totalTugas => _tugasNotifier.totalTugas;

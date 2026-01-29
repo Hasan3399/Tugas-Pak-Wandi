@@ -10,6 +10,7 @@ import 'profil_page.dart';
 
 import '../models/data_models.dart';
 import '../models/data_manager.dart';
+import '../models/tugas_state_notifier.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -20,7 +21,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
-  List<Tugas> _tugas = [];
+  late TugasStateNotifier _tugasNotifier;
 
   int _petLevel = 1;
   int _selectedNavIndex = 0;
@@ -29,6 +30,8 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   void initState() {
     super.initState();
+    _tugasNotifier = TugasStateNotifier();
+    _tugasNotifier.addListener(_onTugasChanged);
     _loadTugas();
     _updatePetLevel();
     
@@ -42,7 +45,14 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   void dispose() {
     _rotationController.dispose();
+    _tugasNotifier.removeListener(_onTugasChanged);
     super.dispose();
+  }
+
+  void _onTugasChanged() {
+    setState(() {
+      // Rebuild ketika ada perubahan di TugasStateNotifier
+    });
   }
 
   @override
@@ -59,30 +69,14 @@ class _DashboardPageState extends State<DashboardPage>
 
   // ===================== DATA TUGAS =====================
   Future<void> _loadTugas() async {
-    final tugasData = await DataManager.loadTugas();
-    final mkData = await DataManager.loadMataKuliah();
-    
-    // Load nama untuk setiap tugas
-    for (var t in tugasData) {
-      if (t.idMatakuliah != null) {
-        final mkWithName = mkData.firstWhere(
-          (mk) => mk.id == t.idMatakuliah,
-          orElse: () => MataKuliah(nama: 'Unknown', id: t.idMatakuliah),
-        );
-        t.mataKuliah = mkWithName.nama;
-      }
-    }
-    
-    setState(() {
-      _tugas = tugasData;
-    });
+    await _tugasNotifier.loadTugas();
+    setState(() {});
   }
 
-  int get _totalTugas => _tugas.length;
-  int get _selesai => _tugas.where((t) => t.selesai).length;
-  int get _belumSelesai => _totalTugas - _selesai;
-  double get _progress =>
-      _totalTugas == 0 ? 0 : (_selesai / _totalTugas) * 100;
+  int get _totalTugas => _tugasNotifier.totalTugas;
+  int get _selesai => _tugasNotifier.selesai;
+  int get _belumSelesai => _tugasNotifier.belumSelesai;
+  double get _progress => _tugasNotifier.progress;
 
   // ===================== PET LOGIC =====================
   Future<void> _updatePetLevel() async {

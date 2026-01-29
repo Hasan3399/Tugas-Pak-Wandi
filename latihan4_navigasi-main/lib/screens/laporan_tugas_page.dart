@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/data_models.dart';
 import '../models/data_manager.dart';
+import '../models/tugas_state_notifier.dart';
 
 class LaporanTugasPage extends StatefulWidget {
   const LaporanTugasPage({super.key});
@@ -11,64 +12,58 @@ class LaporanTugasPage extends StatefulWidget {
 }
 
 class _LaporanTugasPageState extends State<LaporanTugasPage> {
-  List<Tugas> _tugas = [];
-
+  late TugasStateNotifier _tugasNotifier;
+  
   @override
   void initState() {
     super.initState();
+    _tugasNotifier = TugasStateNotifier();
+    _tugasNotifier.addListener(_onTugasChanged);
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    final tugasData = await DataManager.loadTugas();
-    final mkData = await DataManager.loadMataKuliah();
-    
-    // Load nama untuk setiap tugas
-    for (var t in tugasData) {
-      if (t.idMatakuliah != null) {
-        final mkWithName = mkData.firstWhere(
-          (mk) => mk.id == t.idMatakuliah,
-          orElse: () => MataKuliah(nama: 'Unknown', id: t.idMatakuliah),
-        );
-        t.mataKuliah = mkWithName.nama;
-      }
-    }
-    
+  @override
+  void dispose() {
+    _tugasNotifier.removeListener(_onTugasChanged);
+    super.dispose();
+  }
+
+  void _onTugasChanged() {
     setState(() {
-      _tugas = tugasData;
+      // Rebuild ketika ada perubahan di TugasStateNotifier
     });
   }
 
+  Future<void> _loadData() async {
+    await _tugasNotifier.loadTugas();
+    setState(() {});
+  }
+
   void _toggleSelesai(int index) {
-    final tugas = _tugas[index];
-    tugas.selesai = !tugas.selesai;
+    final tugas = _tugasNotifier.tugas[index];
+    final newStatus = !tugas.selesai;
     
     if (tugas.id != null) {
-      DataManager.updateTugasStatus(tugas.id!, tugas.selesai).then((_) {
-        setState(() {});
+      _tugasNotifier.updateTugasStatus(tugas.id!, newStatus).then((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              tugas.selesai ? 'Tugas ditandai selesai' : 'Tugas ditandai belum selesai',
+              newStatus ? '✓ Tugas ditandai selesai' : '○ Tugas ditandai belum selesai',
             ),
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }).catchError((e) {
-        setState(() {
-          tugas.selesai = !tugas.selesai; // Revert
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
       });
-    }
   }
 
-  int get _totalTugas => _tugas.length;
-  int get _selesai => _tugas.where((t) => t.selesai).length;
-  int get _belumSelesai => _totalTugas - _selesai;
-  double get _progress =>
-      _totalTugas == 0 ? 0 : (_selesai / _totalTugas) * 100;
+  int get _totalTugas => _tugasNotifier.totalTugas;
+  int get _selesai => _tugasNotifier.selesai;
+  int get _belumSelesai => _tugasNotifier.belumSelesai;
+  double get _progress => _tugasNotifier.progress;
 
   @override
   Widget build(BuildContext context) {
@@ -159,14 +154,14 @@ class _LaporanTugasPageState extends State<LaporanTugasPage> {
               ),
               const SizedBox(height: 10),
               Expanded(
-                child: _tugas.isEmpty
+                child: _tugasNotifier.tugas.isEmpty
                     ? const Center(
                         child: Text('Belum ada tugas. Tambahkan tugas di menu Pengingat Tugas!'),
                       )
                     : ListView.builder(
-                        itemCount: _tugas.length,
+                        itemCount: _tugasNotifier.tugas.length,
                         itemBuilder: (context, index) {
-                          final tugas = _tugas[index];
+                          final tugas = _tugasNotifier.tugas[index];
                           return Card(
                             color: tugas.selesai
                                 ? Colors.green[800]
